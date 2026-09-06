@@ -15,8 +15,7 @@ Angelina::Angelina(): _ui(AppWindow::create()) {
     _ui->on_drag([&] {
         get_global_mouse_position();
 
-        _ui->window().set_position(slint::LogicalPosition(slint::Point(static_cast<float>(_mouse_x - _drag_offset_x), static_cast<float>(_mouse_y - _drag_offset_y))));
-        std::cout << _mouse_x << std::endl;
+        _ui->window().set_position(slint::PhysicalPosition(slint::Point<int32_t>{ _mouse_x - _drag_offset_x, _mouse_y - _drag_offset_y }));
     });
 
     _ui->on_start_drag([&] {
