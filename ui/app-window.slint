@@ -87,13 +87,13 @@ export component AppWindow inherits Window {
     title: "安洁丽娜";
     width: size;
     height: size;
+    forward-focus: key-handler;
 
     property <bool> is_dragging: false;
     in-out property <length> size: 500px;
 
     callback drag();
     callback start_drag();
-    callback save_config();
 
     menu := PopupWindow {
         x: (parent.width - self.width) / 2;
@@ -141,6 +141,25 @@ export component AppWindow inherits Window {
         }
     }
 
+    key-handler := FocusScope {
+       KeyBinding {
+           keys: @keys(Escape);
+           activated => {
+               root.close();
+           }
+       }
+
+       key-pressed(event) => {
+           if (event.text == "+") {
+               root.size += 40px;
+           }
+           if (event.text == "-") {
+               root.size -= 40px;
+           }
+           accept
+       }
+    }
+
     TouchArea {
         width: 100%;
         height: 100%;
@@ -160,7 +179,7 @@ export component AppWindow inherits Window {
     }
 
     Gif {
-        width: parent.width;
-        height: parent.height;
+        width: root.width;
+        height: root.height;
     }
 }
