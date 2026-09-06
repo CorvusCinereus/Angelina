@@ -60,6 +60,7 @@ export component SettingMenu {
                 spacing: 10px;
 
                 Text {
+                    vertical-alignment: center;
                     text: "大小:";
                 }
                 Button {
@@ -84,13 +85,15 @@ export component AppWindow inherits Window {
     always-on-top: true;
     background: transparent;
     title: "安洁丽娜";
-    width: 500px;
-    height: 500px;
+    width: size;
+    height: size;
 
     property <bool> is_dragging: false;
+    in-out property <length> size: 500px;
 
     callback drag();
     callback start_drag();
+    callback save_config();
 
     menu := PopupWindow {
         x: (parent.width - self.width) / 2;
@@ -130,12 +133,12 @@ export component AppWindow inherits Window {
 
         SettingMenu {
             bigger => {
-                root.width += 30px;
-                root.height += 30px;
+                root.size += 40px;
+                root.save_config();
             }
             smaller => {
-                root.width -= 30px;
-                root.height -= 30px;
+                root.size -= 40px;
+                root.save_config();
             }
         }
     }

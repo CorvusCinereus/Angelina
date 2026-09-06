@@ -17,7 +17,7 @@
 #ifndef ANGELINA_ANGELINA_H
 #define ANGELINA_ANGELINA_H
 #include "app-window.h"
-#include <SDL3/SDL.h>
+#include <sqlite3.h>
 
 class Angelina {
 public:
@@ -28,11 +28,14 @@ public:
 
 private:
     slint::ComponentHandle<AppWindow> _ui;
+    sqlite3* _db;
 
     int _mouse_x, _mouse_y;
     int _drag_offset_x, _drag_offset_y;
 
     bool get_global_mouse_position();
+    void load_config();
+    void save_config();
 };
 
 

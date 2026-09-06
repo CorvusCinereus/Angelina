@@ -5,6 +5,7 @@ add_subdirectory(third_party/slint/api/cpp)
 add_subdirectory(third_party/SDL-release-3.4.16)
 
 include_directories(third_party/SDL-release-3.4.16/include)
+include_directories(third_party)
 
 if(ANDROID)
     add_library(Angelina SHARED src/main.cpp
@@ -19,9 +20,9 @@ else()
 endif()
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    target_link_libraries(Angelina PRIVATE Slint::Slint SDL3::SDL3 X11)
+    target_link_libraries(Angelina PRIVATE Slint::Slint SDL3::SDL3 X11 sqlite3)
 else()
-    target_link_libraries(Angelina PRIVATE Slint::Slint SDL3::SDL3)
+    target_link_libraries(Angelina PRIVATE Slint::Slint SDL3::SDL3 sqlite3)
 endif ()
 
 slint_target_sources(Angelina ui/app-window.slint)
