@@ -25,7 +25,7 @@ extern "C" {
 class Angelina {
 public:
     explicit Angelina();
-    ~Angelina();
+    ~Angelina() = default;
 
     void run();
 

@@ -15,10 +15,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "Angelina.h"
-#include <SDL3/SDL.h>
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <portable-file-dialogs.h>
 #ifdef _WIN32
     #include <windows.h>
 #elif defined(__linux__)
@@ -26,8 +26,6 @@
 #endif
 
 Angelina::Angelina(): _ui(AppWindow::create()) {
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
-
     get_user_config_folder(_config_file_path, MAX_PATH, "angelina");
     std::filesystem::create_directory(_config_file_path);
 
@@ -45,10 +43,6 @@ Angelina::Angelina(): _ui(AppWindow::create()) {
             _drag_offset_y = _mouse_y - pos.y;
         });
     }
-}
-
-Angelina::~Angelina() {
-    SDL_Quit();
 }
 
 void Angelina::run() {
@@ -105,5 +99,5 @@ void Angelina::save_config() {
     if (std::ofstream file(std::format("{}/window_state.bin", _config_file_path), std::ios::binary); file.is_open())
         file.write(reinterpret_cast<char*>(&state), sizeof(state));
     else
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Could not save window state", nullptr);
+        auto m = pfd::message("Error", "Could not save window_state.bin", pfd::choice::ok, pfd::icon::error);
 }

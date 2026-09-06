@@ -2,9 +2,7 @@ cmake_minimum_required(VERSION 3.21)
 project(Angelina LANGUAGES C CXX)
 
 add_subdirectory(third_party/slint/api/cpp)
-add_subdirectory(third_party/SDL-release-3.4.16)
 
-include_directories(third_party/SDL-release-3.4.16/include)
 include_directories(third_party)
 
 if(ANDROID)
@@ -20,9 +18,9 @@ else()
 endif()
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    target_link_libraries(Angelina PRIVATE Slint::Slint SDL3::SDL3 X11)
+    target_link_libraries(Angelina PRIVATE Slint::Slint X11)
 else()
-    target_link_libraries(Angelina PRIVATE Slint::Slint SDL3::SDL3)
+    target_link_libraries(Angelina PRIVATE Slint::Slint)
 endif ()
 
 slint_target_sources(Angelina ui/app-window.slint)
