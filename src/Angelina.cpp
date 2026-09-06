@@ -1,6 +1,18 @@
+// Angelina desk pet.
+// Copyright (C) 2026 CorvusCinereus
 //
-// Created by corvuscinereus on 2026/9/6.
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "Angelina.h"
 #ifdef _WIN32
@@ -24,8 +36,6 @@ Angelina::Angelina(): _ui(AppWindow::create()) {
         const slint::PhysicalPosition pos = _ui->window().position();
         _drag_offset_x = _mouse_x - pos.x;
         _drag_offset_y = _mouse_y - pos.y;
-
-        std::cout << _drag_offset_x << " " << _drag_offset_y << std::endl;
     });
 }
 

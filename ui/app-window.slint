@@ -1,3 +1,19 @@
+// Angelina desk pet.
+// Copyright (C) 2026 CorvusCinereus
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import { Button, VerticalBox, StandardButton } from "std-widgets.slint";
 
 export component Gif {
@@ -5,7 +21,7 @@ export component Gif {
     property <int> frame_count: 8;
 
     Timer {
-        interval: 100ms;
+        interval: 200ms;
         running: true;
         triggered => {
             current_frame += 1;
@@ -26,14 +42,39 @@ export component Gif {
     }
 }
 
-export component MessageDialog inherits Dialog {
-    Text {
-        text: "Message";
-    }
-    StandardButton {
-        kind: ok;
-        clicked => {
-            root.close();
+export component SettingMenu {
+    callback bigger();
+    callback smaller();
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        border-radius: 20px;
+
+        VerticalLayout {
+            padding: 20px;
+            spacing: 5px;
+
+            HorizontalLayout {
+                spacing: 10px;
+
+                Text {
+                    text: "大小:";
+                }
+                Button {
+                    text: "+";
+                    clicked => {
+                        root.bigger();
+                    }
+                }
+                Button {
+                    text: "-";
+                    clicked => {
+                        root.smaller();
+                    }
+                }
+            }
         }
     }
 }
@@ -67,6 +108,10 @@ export component AppWindow inherits Window {
 
                 Button {
                     text: "设置";
+                    clicked => {
+                        menu.close();
+                        settingmenu.show();
+                    }
                 }
 
                 Button {
@@ -75,6 +120,22 @@ export component AppWindow inherits Window {
                         root.close();
                     }
                 }
+            }
+        }
+    }
+
+    settingmenu := PopupWindow {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+
+        SettingMenu {
+            bigger => {
+                root.width += 30px;
+                root.height += 30px;
+            }
+            smaller => {
+                root.width -= 30px;
+                root.height -= 30px;
             }
         }
     }
