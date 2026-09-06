@@ -1,0 +1,3 @@
+[submodule "third_party/slint"]
+	path = third_party/slint
+	url = https://gitee.com/kamenridersaber/slint
