@@ -20,9 +20,9 @@ else()
 endif()
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    target_link_libraries(Angelina PRIVATE Slint::Slint SDL3::SDL3 X11 sqlite3)
+    target_link_libraries(Angelina PRIVATE Slint::Slint SDL3::SDL3 X11)
 else()
-    target_link_libraries(Angelina PRIVATE Slint::Slint SDL3::SDL3 sqlite3)
+    target_link_libraries(Angelina PRIVATE Slint::Slint SDL3::SDL3)
 endif ()
 
 slint_target_sources(Angelina ui/app-window.slint)

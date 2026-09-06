@@ -16,9 +16,9 @@
 
 #include "Angelina.h"
 #include <SDL3/SDL.h>
-#include <cfgpath.h>
 #include <filesystem>
 #include <format>
+#include <fstream>
 #ifdef _WIN32
     #include <windows.h>
 #elif defined(__linux__)
@@ -27,6 +27,9 @@
 
 Angelina::Angelina(): _ui(AppWindow::create()) {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
+
+    get_user_config_folder(_config_file_path, MAX_PATH, "angelina");
+    std::filesystem::create_directory(_config_file_path);
 
     { // 实现鼠标拖拽
         _ui->on_drag([&] {
@@ -50,8 +53,6 @@ Angelina::Angelina(): _ui(AppWindow::create()) {
 
 Angelina::~Angelina() {
     SDL_Quit();
-
-    sqlite3_close(_db);
 }
 
 void Angelina::run() {
@@ -87,45 +88,69 @@ bool Angelina::get_global_mouse_position() {
 #endif
 }
 
-void Angelina::save_config() {
-    // const slint::PhysicalSize size = _ui->window().size();
-    const float size = _ui->get_size();
-    const slint::PhysicalPosition pos = _ui->window().position();
-
-    sqlite3_exec(_db, "DELETE FROM window;", nullptr, nullptr, nullptr);
-    sqlite3_stmt *stmt = nullptr;
-    sqlite3_prepare_v2(_db, "INSERT INTO window VALUES (?, ?, ?);", -1, &stmt, nullptr);
-    sqlite3_bind_int(stmt, 1, static_cast<int>(size));
-    sqlite3_bind_int(stmt, 2, pos.x);
-    sqlite3_bind_int(stmt, 3, pos.y);
-    sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
-}
+// void Angelina::save_config() {
+//     // const slint::PhysicalSize size = _ui->window().size();
+//     const float size = _ui->get_size();
+//     const slint::PhysicalPosition pos = _ui->window().position();
+//
+//     sqlite3_exec(_db, "DELETE FROM window;", nullptr, nullptr, nullptr);
+//     sqlite3_stmt *stmt = nullptr;
+//     sqlite3_prepare_v2(_db, "INSERT INTO window VALUES (?, ?, ?);", -1, &stmt, nullptr);
+//     sqlite3_bind_int(stmt, 1, static_cast<int>(size));
+//     sqlite3_bind_int(stmt, 2, pos.x);
+//     sqlite3_bind_int(stmt, 3, pos.y);
+//     sqlite3_step(stmt);
+//     sqlite3_finalize(stmt);
+// }
+//
+// void Angelina::load_config() {
+//     char path[MAX_PATH];
+//     get_user_config_folder(path, MAX_PATH, "angelina");
+//     std::filesystem::create_directory(path);
+//
+//     if (sqlite3_open(std::format("{}/config.db", path).c_str(), &_db) == SQLITE_OK) {
+//         char *err = nullptr;
+//         sqlite3_exec(_db, "CREATE TABLE IF NOT EXISTS window(size INT, pos_x INT, pos_y INT);", nullptr, nullptr, &err);
+//         if (err)
+//             SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", err, nullptr);
+//
+//         // 查表
+//         sqlite3_stmt *stmt = nullptr;
+//         sqlite3_prepare_v2(_db, "SELECT * FROM window;", -1, &stmt, nullptr);
+//         if (sqlite3_step(stmt) == SQLITE_ROW) {
+//             const int size = sqlite3_column_int(stmt, 0);
+//             const int pos_x = sqlite3_column_int(stmt, 1);
+//             const int pos_y = sqlite3_column_int(stmt, 2);
+//
+//             // _ui->window().set_size(slint::PhysicalSize(slint::Size<uint32_t>(size, size)));
+//             _ui->set_size(static_cast<float>(size));
+//             _ui->window().set_position(slint::PhysicalPosition(slint::Point<int>(pos_x, pos_y)));
+//         }
+//         sqlite3_finalize(stmt);
+//     } else
+//         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "无法打开SQLite3数据库", sqlite3_errmsg(_db), nullptr);
+// }
 
 void Angelina::load_config() {
-    char path[MAX_PATH];
-    get_user_config_folder(path, MAX_PATH, "angelina");
-    std::filesystem::create_directory(path);
+    WindowState state = {};
 
-    if (sqlite3_open(std::format("{}/config.db", path).c_str(), &_db) == SQLITE_OK) {
-        char *err = nullptr;
-        sqlite3_exec(_db, "CREATE TABLE IF NOT EXISTS window(size INT, pos_x INT, pos_y INT);", nullptr, nullptr, &err);
-        if (err)
-            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", err, nullptr);
+    if (std::ifstream file(std::format("{}/window_state.bin", _config_file_path), std::ios::binary); file.is_open()) {
+        file.read(reinterpret_cast<char*>(&state), sizeof(state));
 
-        // 查表
-        sqlite3_stmt *stmt = nullptr;
-        sqlite3_prepare_v2(_db, "SELECT * FROM window;", -1, &stmt, nullptr);
-        if (sqlite3_step(stmt) == SQLITE_ROW) {
-            const int size = sqlite3_column_int(stmt, 0);
-            const int pos_x = sqlite3_column_int(stmt, 1);
-            const int pos_y = sqlite3_column_int(stmt, 2);
+        _ui->set_size(state.size);
+        _ui->window().set_position(slint::PhysicalPosition(slint::Point<int32_t>(state.pos_x, state.pos_y)));
+    }
+}
 
-            // _ui->window().set_size(slint::PhysicalSize(slint::Size<uint32_t>(size, size)));
-            _ui->set_size(static_cast<float>(size));
-            _ui->window().set_position(slint::PhysicalPosition(slint::Point<int>(pos_x, pos_y)));
-        }
-        sqlite3_finalize(stmt);
-    } else
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "无法打开SQLite3数据库", sqlite3_errmsg(_db), nullptr);
+void Angelina::save_config() {
+    WindowState state = {};
+    const slint::PhysicalPosition pos = _ui->window().position();
+    state.pos_x = pos.x;
+    state.pos_y = pos.y;
+    state.size = _ui->get_size();
+
+    if (std::ofstream file(std::format("{}/window_state.bin", _config_file_path), std::ios::binary); file.is_open())
+        file.write(reinterpret_cast<char*>(&state), sizeof(state));
+    else
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Could not save window state", nullptr);
 }

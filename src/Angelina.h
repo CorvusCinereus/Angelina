@@ -17,7 +17,10 @@
 #ifndef ANGELINA_ANGELINA_H
 #define ANGELINA_ANGELINA_H
 #include "app-window.h"
-#include <sqlite3.h>
+
+extern "C" {
+#include <cfgpath.h>
+}
 
 class Angelina {
 public:
@@ -26,9 +29,16 @@ public:
 
     void run();
 
+protected:
+    struct WindowState {
+        int pos_x;
+        int pos_y;
+        float size;
+    };
+
 private:
     slint::ComponentHandle<AppWindow> _ui;
-    sqlite3* _db;
+    char _config_file_path[MAX_PATH];
 
     int _mouse_x, _mouse_y;
     int _drag_offset_x, _drag_offset_y;

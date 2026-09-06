@@ -134,11 +134,9 @@ export component AppWindow inherits Window {
         SettingMenu {
             bigger => {
                 root.size += 40px;
-                root.save_config();
             }
             smaller => {
                 root.size -= 40px;
-                root.save_config();
             }
         }
     }
