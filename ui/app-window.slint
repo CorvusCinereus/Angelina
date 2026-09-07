@@ -32,6 +32,7 @@ export component AppWindow inherits Window {
     property <int> current_frame: 0;
     property <int> frame_count: 8;
     property <image> frame: @image-url("res/images/sit.png");
+    in-out property <int> playing_index;
     in-out property <length> size: 500px;
     in-out property <[{index: int, path: string, name: string}]> musics;
 
@@ -42,6 +43,39 @@ export component AppWindow inherits Window {
     callback play_music(index: int, path: string);
     callback stop_music();
     callback toggle_loop();
+    callback random_gif(gifs: [int]);
+
+    public function change_gif(index: int) {
+        if (index == 0) {
+            current_frame = 0;
+            frame_count = 8;
+            frame = @image-url("res/images/sit.png");
+        } else if (index == 1) {
+            current_frame = 0;
+            frame_count = 7;
+            frame = @image-url("res/images/read.png");
+        } else if (index == 2) {
+            current_frame = 0;
+            frame_count = 5;
+            frame = @image-url("res/images/fly.png");
+        } else if (index == 3) {
+            current_frame = 0;
+            frame_count = 5;
+            frame = @image-url("res/images/ride.png");
+        } else if (index == 4) {
+            current_frame = 0;
+            frame_count = 8;
+            frame = @image-url("res/images/sea.png");
+        } else if (index == 5) {
+            current_frame = 0;
+            frame_count = 25;
+            frame = @image-url("res/images/send.png");
+        } else if (index == 6) {
+            current_frame = 0;
+            frame_count = 8;
+            frame = @image-url("res/images/shopping.png");
+        }
+    }
 
     menu := PopupWindow {
         x: (parent.width - self.width) / 2;
@@ -99,15 +133,15 @@ export component AppWindow inherits Window {
                 ListView {
                     horizontal-stretch: 1;
                     for item in musics : Button {
-                        text: item.name;
+                        text: (root.playing && item.index == root.playing_index) ? "正在播放 - " + item.name : item.name;
+                        primary: root.playing && item.index == root.playing_index;
                         enabled: !root.playing;
                         clicked => {
                             root.play_music(item.index, item.path);
+                            root.playing_index = item.index;
                             root.playing = true;
 
-                            root.frame = @image-url("res/images/read.png");
-                            root.frame_count = 7;
-                            root.current_frame = 0;
+                            root.random_gif([1, 6]);
                         }
                     }
                 }

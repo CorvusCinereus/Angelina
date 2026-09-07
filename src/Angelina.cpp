@@ -19,6 +19,7 @@
 #include <format>
 #include <fstream>
 #include <portable-file-dialogs.h>
+#include <random>
 #ifdef _WIN32
     #include <windows.h>
 #elif defined(__linux__)
@@ -96,6 +97,11 @@ Angelina::Angelina()
         _ui->on_stop_music([&] {stop_music();});
 
         _ui->on_toggle_loop([&] {_loop = !_loop;});
+
+        _ui->on_random_gif([&] (const auto& gifs) {
+            int result = get_random_int(0, gifs->row_count() - 1);
+            _ui->invoke_change_gif(gifs->row_data(result).value());
+        });
     }
 }
 
@@ -179,6 +185,7 @@ void Angelina::play_next() {
     if (_current_index == _musics->row_count()) {
         _current_index = 0;
     }
+    _ui->set_playing_index(_current_index);
     play_music(_current_index);
 }
 
@@ -207,4 +214,11 @@ void Angelina::stop_music() {
     ma_sound_stop(&_sound);
     ma_sound_uninit(&_sound);
     _sound_active = false;
+}
+
+int Angelina::get_random_int(const int min, const int max) {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> dist(min, max);
+    return dist(gen);
 }

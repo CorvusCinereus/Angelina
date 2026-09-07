@@ -38,18 +38,28 @@ protected:
         float size;
     };
 
+    enum Gif {
+        Sit,
+        Read,
+        Fly,
+        Ride,
+        Sea,
+        Send,
+        Shopping
+    };
+
 private:
     slint::ComponentHandle<AppWindow> _ui;
     std::shared_ptr<slint::VectorModel<std::tuple<int, slint::SharedString, slint::SharedString>>> _musics;
 
-    ma_engine _engine;
-    ma_sound _sound;
+    ma_engine _engine{};
+    ma_sound _sound{};
     bool _sound_active;
 
-    int _mouse_x, _mouse_y;
+    int _mouse_x{}, _mouse_y{};
     int _drag_offset_x, _drag_offset_y;
     int _current_index;
-    char _config_file_path[MAX_PATH];
+    char _config_file_path[MAX_PATH]{};
     bool _loop;
 
     bool get_global_mouse_position();
@@ -59,6 +69,7 @@ private:
     void play_music(int index);
     void play_next();
     void stop_music();
+    static int get_random_int(int min, int max);
     friend void on_sound_end(void* pUserData, ma_sound *pSound);
 };
 
