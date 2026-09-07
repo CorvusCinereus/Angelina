@@ -15,14 +15,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "Angelina.h"
-#include <winbase.h>
 
 #if defined(__linux__) && !defined(__ANDROID__)
     #include <X11/Xlib.h>
     #include <cstdlib>
 #elif defined(_WIN32)
     #include <windows.h>
-    #include <ole2.h>   // 包含 CoInitializeEx
+    #include <ole2.h>
+    #include <winbase.h>
 #endif
 
 #ifdef _WIN32
