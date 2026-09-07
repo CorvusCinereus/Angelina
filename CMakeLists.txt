@@ -5,10 +5,17 @@ add_subdirectory(third_party/slint/api/cpp)
 
 include_directories(third_party)
 
-add_executable(Angelina src/main.cpp
-        src/Angelina.cpp
-        src/Angelina.h
-        third_party/miniaudio/miniaudio.c)
+if (WIN32)
+    add_executable(Angelina WIN32 src/main.cpp
+            src/Angelina.cpp
+            src/Angelina.h
+            third_party/miniaudio/miniaudio.c)
+else()
+    add_executable(Angelina src/main.cpp
+            src/Angelina.cpp
+            src/Angelina.h
+            third_party/miniaudio/miniaudio.c)
+endif()
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_link_libraries(Angelina PRIVATE Slint::Slint X11)

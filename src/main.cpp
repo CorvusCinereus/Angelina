@@ -15,14 +15,18 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "Angelina.h"
+#include <winbase.h>
 
 #if defined(__linux__) && !defined(__ANDROID__)
     #include <X11/Xlib.h>
     #include <cstdlib>
+#elif defined(_WIN32)
+    #include <windows.h>
+    #include <ole2.h>   // 包含 CoInitializeEx
 #endif
 
-#ifdef __ANDROID__
-extern "C" void slint_main()
+#ifdef _WIN32
+int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 #else
 int main(int argc, char **argv)
 #endif
@@ -38,9 +42,15 @@ int main(int argc, char **argv)
         unsetenv("WAYLAND_DISPLAY");
         unsetenv("WAYLAND_SOCKET");
     }
+#elif defined(_WIN32)
+    HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
 #endif
 
     Angelina angelina;
 
     angelina.run();
+
+#ifdef _WIN32
+    CoUninitialize();
+#endif
 }

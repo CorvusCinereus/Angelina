@@ -66,7 +66,7 @@ Angelina::Angelina()
 
                 slint::invoke_from_event_loop([&, path] {
                     for (const auto& entry: std::filesystem::directory_iterator(path)) {
-                        if (const std::string& file_name = entry.path().filename(); file_name.find("flac") != std::string::npos || file_name.find("ogg") != std::string::npos || file_name.find("wav") != std::string::npos || file_name.find("mp3") != std::string::npos) {
+                        if (const std::string& file_name = entry.path().filename().string(); file_name.find("flac") != std::string::npos || file_name.find("ogg") != std::string::npos || file_name.find("wav") != std::string::npos || file_name.find("mp3") != std::string::npos) {
                             _musics->push_back({
                                 _musics->row_count(),
                                 slint::SharedString(entry.path().filename().u8string()),
