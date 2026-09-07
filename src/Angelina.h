@@ -18,6 +18,7 @@
 #define ANGELINA_ANGELINA_H
 #include "app-window.h"
 #include <memory>
+#include <miniaudio/miniaudio.h>
 
 extern "C" {
 #include <cfgpath.h>
@@ -26,7 +27,7 @@ extern "C" {
 class Angelina {
 public:
     explicit Angelina();
-    ~Angelina() = default;
+    ~Angelina();
 
     void run();
 
@@ -40,14 +41,20 @@ protected:
 private:
     slint::ComponentHandle<AppWindow> _ui;
     std::shared_ptr<slint::VectorModel<std::tuple<slint::SharedString, slint::SharedString>>> _musics;
-    char _config_file_path[MAX_PATH];
+
+    ma_engine _engine;
+    ma_sound _sound;
+    ma_event _event;
 
     int _mouse_x, _mouse_y;
     int _drag_offset_x, _drag_offset_y;
+    char _config_file_path[MAX_PATH];
 
     bool get_global_mouse_position();
     void load_config();
     void save_config();
+    void play_music(const std::string &music_name);
+    void stop_music();
 };
 
 

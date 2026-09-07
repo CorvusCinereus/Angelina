@@ -27,6 +27,7 @@ export component AppWindow inherits Window {
 
     property <bool> is_dragging: false;
     property <bool> show_frame: false;
+    in-out property <bool> playing: false;
     property <int> current_frame: 0;
     property <int> frame_count: 8;
     property <image> frame: @image-url("res/images/sit.png");
@@ -37,6 +38,8 @@ export component AppWindow inherits Window {
     callback start_drag();
     callback add_file();
     callback add_dir();
+    callback play_music(path: string);
+    callback stop_music();
 
     menu := PopupWindow {
         x: (parent.width - self.width) / 2;
@@ -54,8 +57,22 @@ export component AppWindow inherits Window {
 
                 Button {
                     text: "听歌";
+                    enabled: !playing;
                     clicked => {
                         music_menu.show();
+                    }
+                }
+
+                Button {
+                    text: "停止";
+                    enabled: playing;
+                    clicked => {
+                        root.stop_music();
+                        root.playing = false;
+
+                        root.frame = @image-url("res/images/sit.png");
+                        root.frame_count = 8;
+                        root.current_frame = 0;
                     }
                 }
 
@@ -95,7 +112,12 @@ export component AppWindow inherits Window {
                     for item in musics : Button {
                         text: item.name;
                         clicked => {
-                            // TODO
+                            root.play_music(item.path);
+                            root.playing = true;
+
+                            root.frame = @image-url("res/images/read.png");
+                            root.frame_count = 7;
+                            root.current_frame = 0;
                         }
                     }
                 }

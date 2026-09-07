@@ -32,6 +32,9 @@ Angelina::Angelina()
     get_user_config_folder(_config_file_path, MAX_PATH, "angelina");
     std::filesystem::create_directory(_config_file_path);
 
+    ma_engine_init(nullptr, &_engine);
+    ma_event_init(&_event);
+
     { // 实现鼠标拖拽
         _ui->on_drag([&] {
             get_global_mouse_position();
@@ -47,7 +50,7 @@ Angelina::Angelina()
         });
     }
 
-    {
+    { // 音乐播放相关回调
         _ui->set_musics(_musics);
         _ui->on_add_dir([&] {
             std::thread([&] {
@@ -81,7 +84,19 @@ Angelina::Angelina()
                 });
             }).detach();
         });
+
+        _ui->on_play_music([&](const slint::SharedString& path) {
+            play_music(path.data());
+        });
+
+        _ui->on_stop_music([&] {stop_music();});
     }
+}
+
+Angelina::~Angelina() {
+    ma_sound_uninit(&_sound);
+    ma_event_uninit(&_event);
+    ma_engine_uninit(&_engine);
 }
 
 void Angelina::run() {
@@ -139,4 +154,22 @@ void Angelina::save_config() {
         file.write(reinterpret_cast<char*>(&state), sizeof(state));
     else
         auto m = pfd::message("Error", "Could not save window_state.bin", pfd::choice::ok, pfd::icon::error);
+}
+
+void Angelina::play_music(const std::string& music_name) {
+    stop_music();
+
+    if (ma_sound_init_from_file(&_engine, music_name.c_str(), 0, nullptr, nullptr, &_sound) != MA_SUCCESS) {
+        auto m = pfd::message("Error", std::format("无法播放{}", music_name), pfd::choice::ok, pfd::icon::error);
+        _ui->set_playing(false);
+        return;
+    }
+    ma_sound_start(&_sound);
+}
+
+void Angelina::stop_music() {
+    if (ma_sound_is_playing(&_sound)) {
+        ma_sound_stop(&_sound);
+        ma_sound_uninit(&_sound);
+    }
 }
