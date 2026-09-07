@@ -146,7 +146,11 @@ void Angelina::run() {
         play_music(std::format("{}/res/voices/greet.mp3", _exe_path));
     } else {
         _ui->invoke_change_gif(get_random_int(0, 4));
-        play_music(std::format("{}/res/voices/hirarido.mp3", _exe_path));
+        if (get_random_int(0, 1)) {
+            play_music(std::format("{}/res/voices/hirarido.mp3", _exe_path));
+        } else {
+            play_music(std::format("{}/res/voices/greet2.mp3", _exe_path));
+        }
     }
 
     _ui->run();
