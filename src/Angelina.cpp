@@ -27,13 +27,14 @@
 
 Angelina::Angelina()
     : _ui(AppWindow::create())
-    , _musics(std::make_shared<slint::VectorModel<std::tuple<slint::SharedString, slint::SharedString>>>())
+    , _musics(std::make_shared<slint::VectorModel<std::tuple<int, slint::SharedString, slint::SharedString>>>())
+    , _sound_active(false)
+    , _loop(false)
 {
     get_user_config_folder(_config_file_path, MAX_PATH, "angelina");
     std::filesystem::create_directory(_config_file_path);
 
     ma_engine_init(nullptr, &_engine);
-    ma_event_init(&_event);
 
     { // 实现鼠标拖拽
         _ui->on_drag([&] {
@@ -61,8 +62,9 @@ Angelina::Angelina()
                     for (const auto& entry: std::filesystem::directory_iterator(path)) {
                         if (const std::string& file_name = entry.path().filename(); file_name.find("flac") != std::string::npos || file_name.find("ogg") != std::string::npos || file_name.find("wav") != std::string::npos || file_name.find("mp3") != std::string::npos) {
                             _musics->push_back({
+                                _musics->row_count(),
                                 slint::SharedString(entry.path().filename().u8string()),
-                                slint::SharedString(entry.path().u8string())
+                                slint::SharedString(entry.path().u8string()),
                             });
                         }
                     }
@@ -77,6 +79,7 @@ Angelina::Angelina()
                     for (const auto& file: files) {
                         auto path = std::filesystem::path(file);
                         _musics->push_back({
+                            _musics->row_count(),
                             slint::SharedString(path.filename().u8string()),
                             slint::SharedString(path.u8string())
                         });
@@ -85,17 +88,19 @@ Angelina::Angelina()
             }).detach();
         });
 
-        _ui->on_play_music([&](const slint::SharedString& path) {
+        _ui->on_play_music([&](const int index, const slint::SharedString& path) {
+            _current_index = index;
             play_music(path.data());
         });
 
         _ui->on_stop_music([&] {stop_music();});
+
+        _ui->on_toggle_loop([&] {_loop = !_loop;});
     }
 }
 
 Angelina::~Angelina() {
-    ma_sound_uninit(&_sound);
-    ma_event_uninit(&_event);
+    stop_music();
     ma_engine_uninit(&_engine);
 }
 
@@ -156,6 +161,27 @@ void Angelina::save_config() {
         auto m = pfd::message("Error", "Could not save window_state.bin", pfd::choice::ok, pfd::icon::error);
 }
 
+void on_sound_end(void* pUserData, ma_sound *) {
+    auto angelina = static_cast<Angelina*>(pUserData);
+
+    slint::invoke_from_event_loop([angelina] {
+        angelina->play_next();
+    });
+}
+
+void Angelina::play_next() {
+    if (_loop) {
+        play_music(_current_index);
+        return;
+    }
+
+    ++_current_index;
+    if (_current_index == _musics->row_count()) {
+        _current_index = 0;
+    }
+    play_music(_current_index);
+}
+
 void Angelina::play_music(const std::string& music_name) {
     stop_music();
 
@@ -164,12 +190,21 @@ void Angelina::play_music(const std::string& music_name) {
         _ui->set_playing(false);
         return;
     }
+    _sound_active = true;
+    ma_sound_set_end_callback(&_sound, on_sound_end, this);
     ma_sound_start(&_sound);
 }
 
+void Angelina::play_music(const int index) {
+    play_music(std::get<2>(_musics->row_data(index).value()).data());
+}
+
 void Angelina::stop_music() {
-    if (ma_sound_is_playing(&_sound)) {
-        ma_sound_stop(&_sound);
-        ma_sound_uninit(&_sound);
+    if (!_sound_active) {
+        return;
     }
+
+    ma_sound_stop(&_sound);
+    ma_sound_uninit(&_sound);
+    _sound_active = false;
 }

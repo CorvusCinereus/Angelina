@@ -40,21 +40,26 @@ protected:
 
 private:
     slint::ComponentHandle<AppWindow> _ui;
-    std::shared_ptr<slint::VectorModel<std::tuple<slint::SharedString, slint::SharedString>>> _musics;
+    std::shared_ptr<slint::VectorModel<std::tuple<int, slint::SharedString, slint::SharedString>>> _musics;
 
     ma_engine _engine;
     ma_sound _sound;
-    ma_event _event;
+    bool _sound_active;
 
     int _mouse_x, _mouse_y;
     int _drag_offset_x, _drag_offset_y;
+    int _current_index;
     char _config_file_path[MAX_PATH];
+    bool _loop;
 
     bool get_global_mouse_position();
     void load_config();
     void save_config();
     void play_music(const std::string &music_name);
+    void play_music(int index);
+    void play_next();
     void stop_music();
+    friend void on_sound_end(void* pUserData, ma_sound *pSound);
 };
 
 
