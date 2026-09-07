@@ -20,10 +20,13 @@
 #include <fstream>
 #include <portable-file-dialogs.h>
 #include <random>
+#include <ctime>
 #ifdef _WIN32
     #include <windows.h>
 #elif defined(__linux__)
+extern "C" {
     #include <X11/Xlib.h>
+}
 #endif
 
 Angelina::Angelina()
@@ -31,6 +34,8 @@ Angelina::Angelina()
     , _musics(std::make_shared<slint::VectorModel<std::tuple<int, slint::SharedString, slint::SharedString>>>())
     , _sound_active(false)
     , _loop(false)
+    , _exe_path(get_exe_path())
+    , _is_music(false)
 {
     get_user_config_folder(_config_file_path, MAX_PATH, "angelina");
     std::filesystem::create_directory(_config_file_path);
@@ -91,10 +96,30 @@ Angelina::Angelina()
 
         _ui->on_play_music([&](const int index, const slint::SharedString& path) {
             _current_index = index;
+            _is_music = true;
             play_music(path.data());
         });
 
-        _ui->on_stop_music([&] {stop_music();});
+        _ui->on_stop_music([&] {
+            stop_music();
+            _is_music = false;
+        });
+
+        _ui->on_double_click([&] {
+            _is_music = false;
+            std::string voice = _exe_path + "/res/voices";
+            switch (get_random_int(0, 1)) {
+                case 0:
+                    voice += "/click.mp3";
+                    break;
+                case 1:
+                    voice += "/outdoor.mp3";
+                    break;
+                default:
+                    break;
+            }
+            play_music(voice);
+        });
 
         _ui->on_toggle_loop([&] {_loop = !_loop;});
 
@@ -112,6 +137,16 @@ Angelina::~Angelina() {
 
 void Angelina::run() {
     load_config();
+
+    const std::time_t now = std::time(nullptr);
+    const std::tm* tm = std::localtime(&now);
+    if (const int hour = tm->tm_hour; hour > 6 && hour < 9) {
+        _ui->invoke_change_gif(Fly);
+        play_music(std::format("{}/res/voices/greet.mp3", _exe_path));
+    } else {
+        _ui->invoke_change_gif(get_random_int(0, 3));
+        play_music(std::format("{}/res/voices/hirarido.mp3", _exe_path));
+    }
 
     _ui->run();
 
@@ -170,9 +205,15 @@ void Angelina::save_config() {
 void on_sound_end(void* pUserData, ma_sound *) {
     auto angelina = static_cast<Angelina*>(pUserData);
 
-    slint::invoke_from_event_loop([angelina] {
-        angelina->play_next();
-    });
+    if (angelina->_is_music) {
+        slint::invoke_from_event_loop([angelina] {
+            angelina->play_next();
+        });
+    } else {
+        slint::invoke_from_event_loop([angelina] {
+            angelina->_ui->set_playing(false);
+        });
+    }
 }
 
 void Angelina::play_next() {
@@ -221,4 +262,26 @@ int Angelina::get_random_int(const int min, const int max) {
     static std::mt19937 gen(rd());
     std::uniform_int_distribution<int> dist(min, max);
     return dist(gen);
+}
+
+std::string Angelina::get_exe_path() {
+#ifdef _WIN32
+    std::string path(MAX_PATH, '\0');
+    DWORD len = GetModuleFileNameA(nullptr, path.data(), static_cast<DWORD>(path.size()));
+    if (len == 0) return {};
+    // 若缓冲区不足,GetModuleFileNameA 返回 nSize(即结果被截断),需扩大缓冲区重试。
+    while (len >= path.size()) {
+        path.resize(path.size() * 2);
+        len = GetModuleFileNameA(nullptr, path.data(), static_cast<DWORD>(path.size()));
+        if (len == 0) return {};
+    }
+    path.resize(len);
+    return std::filesystem::path(path).parent_path().string();
+#elif defined(__linux__)
+    std::error_code ec;
+    const auto exe = std::filesystem::read_symlink("/proc/self/exe", ec);
+    return ec ? std::string{} : exe.parent_path().string();
+#else
+#error "Unsupported platform"
+#endif
 }

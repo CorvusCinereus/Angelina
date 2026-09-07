@@ -27,11 +27,11 @@ export component AppWindow inherits Window {
 
     property <bool> is_dragging: false;
     property <bool> show_frame: false;
-    in-out property <bool> playing: false;
+    in-out property <bool> playing: true;
     property <bool> loop: false;
     property <int> current_frame: 0;
-    property <int> frame_count: 8;
-    property <image> frame: @image-url("res/images/sit.png");
+    property <int> frame_count: 5;
+    property <image> frame: @image-url("res/images/fly.png");
     in-out property <int> playing_index;
     in-out property <length> size: 500px;
     in-out property <[{index: int, path: string, name: string}]> musics;
@@ -44,6 +44,7 @@ export component AppWindow inherits Window {
     callback stop_music();
     callback toggle_loop();
     callback random_gif(gifs: [int]);
+    callback double_click();
 
     public function change_gif(index: int) {
         if (index == 0) {
@@ -52,25 +53,21 @@ export component AppWindow inherits Window {
             frame = @image-url("res/images/sit.png");
         } else if (index == 1) {
             current_frame = 0;
-            frame_count = 7;
-            frame = @image-url("res/images/read.png");
+            frame_count = 5;
+            frame = @image-url("res/images/ride.png");
         } else if (index == 2) {
             current_frame = 0;
             frame_count = 5;
             frame = @image-url("res/images/fly.png");
         } else if (index == 3) {
             current_frame = 0;
-            frame_count = 5;
-            frame = @image-url("res/images/ride.png");
-        } else if (index == 4) {
-            current_frame = 0;
             frame_count = 8;
             frame = @image-url("res/images/sea.png");
-        } else if (index == 5) {
+        } else if (index == 4) {
             current_frame = 0;
-            frame_count = 25;
-            frame = @image-url("res/images/send.png");
-        } else if (index == 6) {
+            frame_count = 7;
+            frame = @image-url("res/images/read.png");
+        } else if (index == 5) {
             current_frame = 0;
             frame_count = 8;
             frame = @image-url("res/images/shopping.png");
@@ -141,7 +138,7 @@ export component AppWindow inherits Window {
                             root.playing_index = item.index;
                             root.playing = true;
 
-                            root.random_gif([1, 6]);
+                            root.random_gif([4, 5]);
                         }
                     }
                 }
@@ -181,9 +178,7 @@ export component AppWindow inherits Window {
                         root.stop_music();
                         root.playing = false;
 
-                        root.frame = @image-url("res/images/sit.png");
-                        root.frame_count = 8;
-                        root.current_frame = 0;
+                        root.random_gif([0, 1, 2, 3]);
                     }
                 }
             }
@@ -270,6 +265,14 @@ export component AppWindow inherits Window {
                 root.start_drag();
             } else if (is_dragging && event.kind == PointerEventKind.up && event.button == PointerEventButton.left) {
                 is_dragging = false;
+            }
+        }
+
+        double-clicked => {
+            if (!root.playing) {
+                root.double_click();
+                root.playing = true;
+                root.random_gif([0, 3]);
             }
         }
     }

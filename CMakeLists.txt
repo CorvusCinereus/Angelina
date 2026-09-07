@@ -5,17 +5,10 @@ add_subdirectory(third_party/slint/api/cpp)
 
 include_directories(third_party)
 
-if(ANDROID)
-    add_library(Angelina SHARED src/main.cpp
-            src/Angelina.cpp
-            src/Angelina.h
-            third_party/miniaudio/miniaudio.c)
-else()
-    add_executable(Angelina src/main.cpp
-            src/Angelina.cpp
-            src/Angelina.h
-            third_party/miniaudio/miniaudio.c)
-endif()
+add_executable(Angelina src/main.cpp
+        src/Angelina.cpp
+        src/Angelina.h
+        third_party/miniaudio/miniaudio.c)
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_link_libraries(Angelina PRIVATE Slint::Slint X11)
@@ -28,3 +21,10 @@ slint_target_sources(Angelina ui/app-window.slint)
 if (WIN32)
     add_custom_command(TARGET Angelina POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:Angelina> $<TARGET_FILE_DIR:Angelina> COMMAND_EXPAND_LISTS)
 endif()
+
+add_custom_command(TARGET Angelina POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/res
+        $<TARGET_FILE_DIR:Angelina>/res
+        COMMENT "Copying res directory to output directory"
+)
