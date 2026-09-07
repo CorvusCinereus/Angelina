@@ -25,7 +25,10 @@
     #include <X11/Xlib.h>
 #endif
 
-Angelina::Angelina(): _ui(AppWindow::create()) {
+Angelina::Angelina()
+    : _ui(AppWindow::create())
+    , _musics(std::make_shared<slint::VectorModel<std::tuple<slint::SharedString, slint::SharedString>>>())
+{
     get_user_config_folder(_config_file_path, MAX_PATH, "angelina");
     std::filesystem::create_directory(_config_file_path);
 
@@ -41,6 +44,42 @@ Angelina::Angelina(): _ui(AppWindow::create()) {
             const slint::PhysicalPosition pos = _ui->window().position();
             _drag_offset_x = _mouse_x - pos.x;
             _drag_offset_y = _mouse_y - pos.y;
+        });
+    }
+
+    {
+        _ui->set_musics(_musics);
+        _ui->on_add_dir([&] {
+            std::thread([&] {
+                const std::filesystem::path path(pfd::select_folder("选择目录", pfd::path::home()).result());
+                if (path.empty()) return;
+
+                slint::invoke_from_event_loop([&, path] {
+                    for (const auto& entry: std::filesystem::directory_iterator(path)) {
+                        if (const std::string& file_name = entry.path().filename(); file_name.find("flac") != std::string::npos || file_name.find("ogg") != std::string::npos || file_name.find("wav") != std::string::npos || file_name.find("mp3") != std::string::npos) {
+                            _musics->push_back({
+                                slint::SharedString(entry.path().filename().u8string()),
+                                slint::SharedString(entry.path().u8string())
+                            });
+                        }
+                    }
+                });
+            }).detach();
+        });
+
+        _ui->on_add_file([&] {
+            std::thread([&] {
+                const std::vector<std::string> files = pfd::open_file("选择文件", pfd::path::home(), {"Music", "*.flac *.mp3 *.wav *.ogg"}, pfd::opt::multiselect).result();
+                slint::invoke_from_event_loop([&, files] {
+                    for (const auto& file: files) {
+                        auto path = std::filesystem::path(file);
+                        _musics->push_back({
+                            slint::SharedString(path.filename().u8string()),
+                            slint::SharedString(path.u8string())
+                        });
+                    }
+                });
+            }).detach();
         });
     }
 }
@@ -68,7 +107,7 @@ bool Angelina::get_global_mouse_position() {
     Window root, child;
     int root_x, root_y, win_x, win_y;
     unsigned int mask;
-    bool ok = XQueryPointer(display, DefaultRootWindow(display), &root, &child,
+    const bool ok = XQueryPointer(display, DefaultRootWindow(display), &root, &child,
                             &root_x, &root_y, &win_x, &win_y, &mask);
     if (ok) { _mouse_x = root_x; _mouse_y = root_y; }
     XCloseDisplay(display);

@@ -14,49 +14,29 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import { Button, VerticalBox, StandardButton } from "std-widgets.slint";
-
-export component Gif {
-    property <int> current_frame;
-    property <int> frame_count: 8;
-
-    Timer {
-        interval: 200ms;
-        running: true;
-        triggered => {
-            current_frame += 1;
-            if (current_frame == frame_count) {
-                current_frame = 0;
-            }
-        }
-    }
-
-    Image {
-        width: parent.width;
-        height: parent.height;
-        source: @image-url("res/images/sit.png");
-        source-clip-x: 0;
-        source-clip-y: current_frame * 1024;
-        source-clip-height: 1024;
-        source-clip-width: 1024;
-    }
-}
+import { Button, VerticalBox, StandardButton, ListView, StandardListView, HorizontalBox } from "std-widgets.slint";
 
 export component AppWindow inherits Window {
     no-frame: !show_frame;
     always-on-top: true;
     background: transparent;
-    title: "安洁丽娜";
+    title: "安洁莉娜";
     width: size;
     height: size;
     forward-focus: key-handler;
 
     property <bool> is_dragging: false;
     property <bool> show_frame: false;
+    property <int> current_frame: 0;
+    property <int> frame_count: 8;
+    property <image> frame: @image-url("res/images/sit.png");
     in-out property <length> size: 500px;
+    in-out property <[{path: string, name: string}]> musics;
 
     callback drag();
     callback start_drag();
+    callback add_file();
+    callback add_dir();
 
     menu := PopupWindow {
         x: (parent.width - self.width) / 2;
@@ -71,6 +51,13 @@ export component AppWindow inherits Window {
             VerticalLayout {
                 spacing: 5px;
                 padding: 20px;
+
+                Button {
+                    text: "听歌";
+                    clicked => {
+                        music_menu.show();
+                    }
+                }
 
                 Button {
                     text: "设置";
@@ -90,49 +77,96 @@ export component AppWindow inherits Window {
         }
     }
 
+    music_menu := PopupWindow {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+
+        Rectangle {
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 20px;
+
+            VerticalLayout {
+                padding: 20px;
+                spacing: 10px;
+
+                ListView {
+                    for item in musics : Button {
+                        text: item.name;
+                        clicked => {
+                            // TODO
+                        }
+                    }
+                }
+
+                HorizontalLayout {
+                    spacing: 10px;
+
+                    Button {
+                        text: "添加文件";
+                        clicked => {
+                            root.add_file();
+                            music_menu.show();
+                        }
+                    }
+                    Button {
+                        text: "添加目录";
+                        clicked => {
+                            root.add_dir();
+                            music_menu.show();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     settingmenu := PopupWindow {
         x: (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;
 
         Rectangle {
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.6);
-                border-radius: 20px;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 20px;
 
-                VerticalLayout {
-                    padding: 20px;
-                    spacing: 5px;
+            VerticalLayout {
+                padding: 20px;
+                spacing: 5px;
 
-                    HorizontalLayout {
-                        spacing: 10px;
+                HorizontalLayout {
+                    spacing: 10px;
 
-                        Text {
-                            vertical-alignment: center;
-                            text: "大小:";
-                        }
-                        Button {
-                            text: "+";
-                            clicked => {
-                                root.size += 40px;
-                            }
-                        }
-                        Button {
-                            text: "-";
-                            clicked => {
-                                root.size -= 40px;
-                            }
+                    Text {
+                        vertical-alignment: center;
+                        text: "大小:";
+                    }
+                    Button {
+                        text: "+";
+                        clicked => {
+                            root.size += 40px;
+                            settingmenu.show();
                         }
                     }
-
                     Button {
-                        text: show_frame ? "隐藏边框" : "显示边框";
+                        text: "-";
                         clicked => {
-                            show_frame = !show_frame;
+                            root.size -= 40px;
+                            settingmenu.show();
                         }
                     }
                 }
+
+                Button {
+                    text: show_frame ? "隐藏边框" : "显示边框";
+                    clicked => {
+                        show_frame = !show_frame;
+                    }
+                }
             }
+        }
     }
 
     key-handler := FocusScope {
@@ -172,8 +206,24 @@ export component AppWindow inherits Window {
         }
     }
 
-    Gif {
-        width: root.width;
-        height: root.height;
+    Timer {
+        interval: 200ms;
+        running: true;
+        triggered => {
+            current_frame += 1;
+            if (current_frame == frame_count) {
+                current_frame = 0;
+            }
+        }
+    }
+
+    Image {
+        width: parent.width;
+        height: parent.height;
+        source: frame;
+        source-clip-x: 0;
+        source-clip-y: current_frame * 1024;
+        source-clip-height: 1024;
+        source-clip-width: 1024;
     }
 }

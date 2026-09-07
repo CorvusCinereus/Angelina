@@ -17,6 +17,7 @@
 #ifndef ANGELINA_ANGELINA_H
 #define ANGELINA_ANGELINA_H
 #include "app-window.h"
+#include <memory>
 
 extern "C" {
 #include <cfgpath.h>
@@ -38,6 +39,7 @@ protected:
 
 private:
     slint::ComponentHandle<AppWindow> _ui;
+    std::shared_ptr<slint::VectorModel<std::tuple<slint::SharedString, slint::SharedString>>> _musics;
     char _config_file_path[MAX_PATH];
 
     int _mouse_x, _mouse_y;
