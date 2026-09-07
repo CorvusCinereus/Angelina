@@ -42,46 +42,8 @@ export component Gif {
     }
 }
 
-export component SettingMenu {
-    callback bigger();
-    callback smaller();
-
-    Rectangle {
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.6);
-        border-radius: 20px;
-
-        VerticalLayout {
-            padding: 20px;
-            spacing: 5px;
-
-            HorizontalLayout {
-                spacing: 10px;
-
-                Text {
-                    vertical-alignment: center;
-                    text: "大小:";
-                }
-                Button {
-                    text: "+";
-                    clicked => {
-                        root.bigger();
-                    }
-                }
-                Button {
-                    text: "-";
-                    clicked => {
-                        root.smaller();
-                    }
-                }
-            }
-        }
-    }
-}
-
 export component AppWindow inherits Window {
-    no-frame: true;
+    no-frame: !show_frame;
     always-on-top: true;
     background: transparent;
     title: "安洁丽娜";
@@ -90,6 +52,7 @@ export component AppWindow inherits Window {
     forward-focus: key-handler;
 
     property <bool> is_dragging: false;
+    property <bool> show_frame: false;
     in-out property <length> size: 500px;
 
     callback drag();
@@ -131,14 +94,45 @@ export component AppWindow inherits Window {
         x: (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;
 
-        SettingMenu {
-            bigger => {
-                root.size += 40px;
+        Rectangle {
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.6);
+                border-radius: 20px;
+
+                VerticalLayout {
+                    padding: 20px;
+                    spacing: 5px;
+
+                    HorizontalLayout {
+                        spacing: 10px;
+
+                        Text {
+                            vertical-alignment: center;
+                            text: "大小:";
+                        }
+                        Button {
+                            text: "+";
+                            clicked => {
+                                root.size += 40px;
+                            }
+                        }
+                        Button {
+                            text: "-";
+                            clicked => {
+                                root.size -= 40px;
+                            }
+                        }
+                    }
+
+                    Button {
+                        text: show_frame ? "隐藏边框" : "显示边框";
+                        clicked => {
+                            show_frame = !show_frame;
+                        }
+                    }
+                }
             }
-            smaller => {
-                root.size -= 40px;
-            }
-        }
     }
 
     key-handler := FocusScope {
