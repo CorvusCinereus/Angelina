@@ -105,10 +105,10 @@ Angelina::Angelina()
             _is_music = false;
         });
 
-        _ui->on_double_click([&] {
+        _ui->on_user_double_click([&] {
             _is_music = false;
             std::string voice = _exe_path + "/res/voices";
-            switch (get_random_int(0, 1)) {
+            switch (const int index = get_random_int(0, 5); index) {
                 case 0:
                     voice += "/click.mp3";
                     break;
@@ -116,6 +116,7 @@ Angelina::Angelina()
                     voice += "/outdoor.mp3";
                     break;
                 default:
+                    voice = std::format("{}/talk{}.mp3", voice, index);
                     break;
             }
             play_music(voice);
@@ -144,7 +145,7 @@ void Angelina::run() {
         _ui->invoke_change_gif(Fly);
         play_music(std::format("{}/res/voices/greet.mp3", _exe_path));
     } else {
-        _ui->invoke_change_gif(get_random_int(0, 3));
+        _ui->invoke_change_gif(get_random_int(0, 4));
         play_music(std::format("{}/res/voices/hirarido.mp3", _exe_path));
     }
 

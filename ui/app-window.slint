@@ -32,7 +32,7 @@ export component AppWindow inherits Window {
     property <int> current_frame: 0;
     property <int> frame_count: 5;
     property <image> frame: @image-url("res/images/fly.png");
-    in-out property <int> playing_index;
+    in-out property <int> playing_index: -1;
     in-out property <length> size: 500px;
     in-out property <[{index: int, path: string, name: string}]> musics;
 
@@ -44,7 +44,7 @@ export component AppWindow inherits Window {
     callback stop_music();
     callback toggle_loop();
     callback random_gif(gifs: [int]);
-    callback double_click();
+    callback user_double_click();
 
     public function change_gif(index: int) {
         if (index == 0) {
@@ -65,9 +65,13 @@ export component AppWindow inherits Window {
             frame = @image-url("res/images/sea.png");
         } else if (index == 4) {
             current_frame = 0;
+            frame_count = 4;
+            frame = @image-url("res/images/explore.png");
+        } else if (index == 5) {
+            current_frame = 0;
             frame_count = 7;
             frame = @image-url("res/images/read.png");
-        } else if (index == 5) {
+        } else if (index == 6) {
             current_frame = 0;
             frame_count = 8;
             frame = @image-url("res/images/shopping.png");
@@ -138,7 +142,7 @@ export component AppWindow inherits Window {
                             root.playing_index = item.index;
                             root.playing = true;
 
-                            root.random_gif([4, 5]);
+                            root.random_gif([5, 6]);
                         }
                     }
                 }
@@ -178,7 +182,7 @@ export component AppWindow inherits Window {
                         root.stop_music();
                         root.playing = false;
 
-                        root.random_gif([0, 1, 2, 3]);
+                        root.random_gif([0, 1, 2, 3, 4]);
                     }
                 }
             }
@@ -270,9 +274,10 @@ export component AppWindow inherits Window {
 
         double-clicked => {
             if (!root.playing) {
-                root.double_click();
+                root.user_double_click();
                 root.playing = true;
-                root.random_gif([0, 3]);
+                root.random_gif([0, 1, 2, 3, 4]);
+                root.playing_index = -1;
             }
         }
     }
