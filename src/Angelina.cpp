@@ -33,6 +33,7 @@ Angelina::Angelina(QObject *root): _root(root), _loop(false) {
 
     {
         QObject::connect(_root, SIGNAL(play_music(QString)), this, SLOT(play_music(QString)));
+        QObject::connect(_root, SIGNAL(stop_music()), this, SLOT(stop_music()));
     }
 }
 
@@ -51,10 +52,7 @@ void at_music_end(void* pUserData, ma_sound* sound) {
 }
 
 void Angelina::play_music(const QString& file) {
-    if (ma_sound_is_playing(&_sound)) {
-        ma_sound_stop(&_sound);
-        ma_sound_uninit(&_sound);
-    }
+    stop_music();
 
     auto music = QUrl(file).toLocalFile();
     if (ma_sound_init_from_file(&_engine, music.toStdString().c_str(), 0, nullptr, nullptr, &_sound) != MA_SUCCESS) {
@@ -66,8 +64,9 @@ void Angelina::play_music(const QString& file) {
 }
 
 void Angelina::stop_music() {
-    if (ma_sound_is_playing(&_sound)) {
+    if (QQmlProperty(_root, "isPlaying").read().toBool()) {
         ma_sound_stop(&_sound);
         ma_sound_uninit(&_sound);
+        QQmlProperty(_root, "isPlaying").write(false);
     }
 }

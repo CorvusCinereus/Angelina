@@ -18,6 +18,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Basic
 import QtQuick.Dialogs
+import Qt.labs.folderlistmodel
 
 ApplicationWindow {
     id: window
@@ -31,8 +32,15 @@ ApplicationWindow {
 
     property bool isPlaying: false
 
+    // 正在播放的歌曲路径（用于列表高亮）
+    property string playing_music: ""
+
+    // 统一的音乐扩展名过滤（供 FileDialog 与 FolderListModel 共用）
+    readonly property var music_extensions: ["*.mp3", "*.flac", "*.wav", "*.ogg"]
+
     signal show_message(string title, string content)
     signal play_music(string music)
+    signal stop_music()
 
     onShow_message: (title, content) => {
         message_dialog.title = title
@@ -46,6 +54,28 @@ ApplicationWindow {
 
     function choose_dir() {
         folder_dialog.open()
+    }
+
+    // 把一首歌加入列表（自动去重）
+    function add_music_file(url) {
+        if (url === undefined || url === null)
+            return
+        let s = String(url)
+        if (s.length === 0 || s === "undefined")
+            return
+
+        for (let i = 0; i < music_list.count; ++i) {
+            if (music_list.get(i).path === s)
+                return
+        }
+
+        let name = s.substring(s.lastIndexOf('/') + 1)
+        try {
+            name = decodeURIComponent(name)
+        } catch (e) {
+            // 解码失败就保留原样
+        }
+        music_list.append({title: name, path: s})
     }
 
     Item {
@@ -98,6 +128,38 @@ ApplicationWindow {
         source: "art/images/坐坐.gif"
     }
 
+    FolderListModel {
+        id: folder_model
+        folder: ""
+        showDirs: false
+        showFiles: true
+        showDotAndDotDot: false
+        showOnlyReadable: true
+        nameFilters: window.music_extensions
+        sortField: FolderListModel.Name
+
+        property bool scanning: false
+
+        function scanInto() {
+            for (let i = 0; i < count; ++i) {
+                // 角色名在不同 Qt 版本里大小写不一致：Qt 5.15+ 为 "fileUrl"
+                let url = get(i, "fileUrl")
+                if (url === undefined)
+                    url = get(i, "fileURL")
+                if (url === undefined || url === null || String(url).length === 0)
+                    continue
+                window.add_music_file(url)
+            }
+        }
+
+        onStatusChanged: {
+            if (scanning && status === FolderListModel.Ready) {
+                scanning = false
+                scanInto()
+            }
+        }
+    }
+
     MessageDialog {
         id: message_dialog
 
@@ -115,7 +177,9 @@ ApplicationWindow {
         nameFilters: ["Music files (*.mp3 *.flac *.wav *.ogg)", "All files (*.*)"]
 
         onAccepted: {
-            window.play_music(selectedFiles[0])
+            for (let i = 0; i < selectedFiles.length; ++i) {
+                window.add_music_file(selectedFiles[i])
+            }
         }
     }
 
@@ -124,7 +188,14 @@ ApplicationWindow {
         title: qsTr("选择目录")
 
         onAccepted: {
-            console.log(selectedFolder)
+            // 选的是同一个目录时 folder 不会变化，statusChanged 不会触发，手动扫一次
+            if (String(folder_model.folder) === String(selectedFolder)
+                && folder_model.status === FolderListModel.Ready) {
+                folder_model.scanInto()
+            } else {
+                folder_model.scanning = true
+                folder_model.folder = selectedFolder
+            }
         }
     }
 
@@ -164,6 +235,23 @@ ApplicationWindow {
                     onClicked: {
                         menu.close()
                         music_menu.open()
+                    }
+                }
+
+                Button {
+                    text: qsTr("停止")
+                    visible: window.isPlaying
+                    enabled: window.isPlaying
+                    Layout.fillWidth: true
+                    palette.buttonText: "white"
+                    background: Rectangle {
+                        anchors.fill: parent
+                        color: window.reallyDark
+                        radius: 15
+                    }
+
+                    onClicked: {
+                        window.stop_music()
                     }
                 }
 
@@ -219,28 +307,63 @@ ApplicationWindow {
                     }
 
                     delegate: Rectangle {
+                        id: item_rect
                         required property int index
                         required property string title
+                        required property string path
 
                         width: music_list_view.width
                         height: 40
                         radius: 10
-                        color: ListView.isCurrentItem ? "#3f3f3f" : window.reallyDark
+                        color: is_playing ? "#3a4a6b"
+                                          : (ListView.isCurrentItem ? "#3f3f3f" : window.reallyDark)
+
+                        readonly property bool is_playing: window.playing_music === item_rect.path
 
                         Text {
                             anchors.left: parent.left
-                            anchors.right: parent.right
+                            anchors.right: del_button.left
                             anchors.leftMargin: 12
-                            anchors.rightMargin: 12
+                            anchors.rightMargin: 8
                             anchors.verticalCenter: parent.verticalCenter
-                            text: title
+                            text: item_rect.title
                             color: "white"
                             elide: Text.ElideRight
                         }
 
                         MouseArea {
                             anchors.fill: parent
-                            onClicked: music_list_view.currentIndex = index
+                            onClicked: music_list_view.currentIndex = item_rect.index
+
+                            onDoubleClicked: {
+                                music_list_view.currentIndex = item_rect.index
+                                window.playing_music = item_rect.path
+                                window.play_music(item_rect.path)
+                                window.isPlaying = true
+                            }
+                        }
+
+                        Button {
+                            id: del_button
+                            text: "✕"
+                            width: 26
+                            height: 26
+                            padding: 0
+                            anchors.right: parent.right
+                            anchors.rightMargin: 7
+                            anchors.verticalCenter: parent.verticalCenter
+                            palette.buttonText: "white"
+
+                            background: Rectangle {
+                                anchors.fill: parent
+                                radius: width / 2
+                                color: del_button.hovered ? "#8c3a3a" : "#3a2a2a"
+                                opacity: 0.9
+                            }
+
+                            onClicked: {
+                                music_list.remove(item_rect.index)
+                            }
                         }
                     }
 
@@ -294,22 +417,6 @@ ApplicationWindow {
                         window.choose_dir()
                     }
                 }
-
-                // Button {
-                //     text: "-"
-                //     Layout.fillWidth: true
-                //     palette.buttonText: "white"
-                //     background: Rectangle {
-                //         anchors.fill: parent
-                //         color: window.reallyDark
-                //         radius: 15
-                //     }
-                //     onClicked: {
-                //         if (music_list_view.currentIndex >= 0) {
-                //             music_list.remove(music_list_view.currentIndex)
-                //         }
-                //     }
-                // }
             }
 
             Button {
