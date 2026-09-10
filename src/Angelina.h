@@ -30,6 +30,8 @@ public:
 public slots:
     void play_music(const QString& file);
     void stop_music();
+    void random();
+    void handle_music_end();
 
 private:
     QObject* _root;
@@ -38,8 +40,6 @@ private:
 
     ma_engine _engine;
     ma_sound _sound;
-
-    bool _loop;
 
     friend void at_music_end(void* pUserData, ma_sound* sound);
 };
