@@ -16,64 +16,32 @@
 
 #ifndef ANGELINA_ANGELINA_H
 #define ANGELINA_ANGELINA_H
-#include "app-window.h"
-#include <memory>
-#include <miniaudio/miniaudio.h>
-
+#include <QSettings>
 extern "C" {
-#include <cfgpath.h>
+#include <miniaudio.h>
 }
 
-class Angelina {
+class Angelina : public QObject {
+    Q_OBJECT
 public:
-    explicit Angelina();
+    Angelina(QObject* root);
     ~Angelina();
 
-    void run();
-
-protected:
-    struct WindowState {
-        int pos_x;
-        int pos_y;
-        float size;
-    };
-
-    enum Gif {
-        Sit,
-        Ride,
-        Fly,
-        Sea,
-        Read,
-        Shopping
-    };
+public slots:
+    void play_music(const QString& file);
+    void stop_music();
 
 private:
-    slint::ComponentHandle<AppWindow> _ui;
-    std::shared_ptr<slint::VectorModel<std::tuple<int, slint::SharedString, slint::SharedString>>> _musics;
-    std::string _exe_path;
+    QObject* _root;
+    QObject* _gif;
+    QSettings _settings;
 
-    ma_engine _engine{};
-    ma_sound _sound{};
-    bool _sound_active;
+    ma_engine _engine;
+    ma_sound _sound;
 
-    int _mouse_x{}, _mouse_y{};
-    int _drag_offset_x, _drag_offset_y;
-    int _current_index;
-    char _config_file_path[MAX_PATH]{};
     bool _loop;
-    bool _is_music;
 
-    bool get_global_mouse_position();
-    void load_config();
-    void save_config();
-    void play_music(const std::string &music_name);
-    void play_music(int index);
-    void play_next();
-    void stop_music();
-    static int get_random_int(int min, int max);
-    static std::string get_exe_path();
-    friend void on_sound_end(void* pUserData, ma_sound *pSound);
+    friend void at_music_end(void* pUserData, ma_sound* sound);
 };
-
 
 #endif //ANGELINA_ANGELINA_H
