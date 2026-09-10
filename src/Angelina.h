@@ -16,6 +16,7 @@
 
 #ifndef ANGELINA_ANGELINA_H
 #define ANGELINA_ANGELINA_H
+#include <QByteArray>
 #include <QSettings>
 extern "C" {
 #include <miniaudio.h>
@@ -31,6 +32,7 @@ public slots:
     void play_music(const QString& file);
     void stop_music();
     void random();
+    void random_on_play();
     void handle_music_end();
 
 private:
@@ -40,6 +42,9 @@ private:
 
     ma_engine _engine;
     ma_sound _sound;
+    ma_decoder _decoder;
+    QByteArray _sound_data;
+    bool _sound_active = false;
 
     friend void at_music_end(void* pUserData, ma_sound* sound);
 };

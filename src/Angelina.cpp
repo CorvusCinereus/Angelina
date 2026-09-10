@@ -15,8 +15,17 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "Angelina.h"
+#include <QFile>
 #include <QQmlProperty>
 #include <QUrl>
+#include <random>
+
+static int get_random_int(const int min, const int max) {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> dist(min, max);
+    return dist(gen);
+}
 
 Angelina::Angelina(QObject *root): _root(root) {
     _gif = _root->findChild<QObject*>("gif");
@@ -34,7 +43,10 @@ Angelina::Angelina(QObject *root): _root(root) {
         QObject::connect(_root, SIGNAL(play_music(QString)), this, SLOT(play_music(QString)));
         QObject::connect(_root, SIGNAL(stop_music()), this, SLOT(stop_music()));
         QObject::connect(_root, SIGNAL(random()), this, SLOT(random()));
+        QObject::connect(_root, SIGNAL(random_on_play()), this, SLOT(random_on_play()));
     }
+
+    random();
 }
 
 Angelina::~Angelina() {
@@ -51,34 +63,78 @@ void at_music_end(void* pUserData, ma_sound* sound) {
 }
 
 void Angelina::handle_music_end() {
-    if (!QQmlProperty(_root, "isPlaying").read().toBool() || !ma_sound_at_end(&_sound))
+    if (!_sound_active || !ma_sound_at_end(&_sound))
         return;
 
+    const bool was_playing = QQmlProperty(_root, "isPlaying").read().toBool();
     stop_music();
-    QQmlProperty(_root, "isPlaying").write(false);
-    QMetaObject::invokeMethod(_root, "at_music_end");
+    if (was_playing)
+        QMetaObject::invokeMethod(_root, "at_music_end");
 }
 
 void Angelina::play_music(const QString& file) {
     stop_music();
 
-    auto music = QUrl(file).toLocalFile();
-    if (ma_sound_init_from_file(&_engine, music.toStdString().c_str(), 0, nullptr, nullptr, &_sound) != MA_SUCCESS) {
+    const QString path = file.startsWith("file:", Qt::CaseInsensitive)
+                             ? QUrl(file).toLocalFile()
+                             : file;
+
+    QFile resource(path);
+    if (!resource.open(QIODevice::ReadOnly)) {
         QMetaObject::invokeMethod(_root, "show_message", Qt::AutoConnection, Q_ARG(QString, "Error"), Q_ARG(QString, "无法播放"));
         return;
     }
-    ma_sound_start(&_sound);
+    _sound_data = resource.readAll();
+    resource.close();
+
+    const ma_decoder_config config = ma_decoder_config_init(ma_format_f32, 0, 0);
+    if (ma_decoder_init_memory(_sound_data.constData(), _sound_data.size(), &config, &_decoder) != MA_SUCCESS) {
+        _sound_data.clear();
+        QMetaObject::invokeMethod(_root, "show_message", Qt::AutoConnection, Q_ARG(QString, "Error"), Q_ARG(QString, "无法播放"));
+        return;
+    }
+    if (ma_sound_init_from_data_source(&_engine, &_decoder, 0, nullptr, &_sound) != MA_SUCCESS) {
+        ma_decoder_uninit(&_decoder);
+        _sound_data.clear();
+        QMetaObject::invokeMethod(_root, "show_message", Qt::AutoConnection, Q_ARG(QString, "Error"), Q_ARG(QString, "无法播放"));
+        return;
+    }
+
+    _sound_active = true;
     ma_sound_set_end_callback(&_sound, at_music_end, this);
+    ma_sound_start(&_sound);
+
+    QQmlProperty(_root, "isPlaying").write(true);
 }
 
 void Angelina::stop_music() {
-    if (QQmlProperty(_root, "isPlaying").read().toBool()) {
-        ma_sound_stop(&_sound);
-        ma_sound_uninit(&_sound);
-        QQmlProperty(_root, "isPlaying").write(false);
-    }
+    if (!_sound_active)
+        return;
+
+    ma_sound_stop(&_sound);
+    ma_sound_uninit(&_sound);
+    ma_decoder_uninit(&_decoder);
+    _sound_data.clear();
+    _sound_active = false;
+    QQmlProperty(_root, "isPlaying").write(false);
 }
 
 void Angelina::random() {
-    // TODO
+    char buffer[64];
+    std::sprintf(buffer, "art/images/%d.gif", get_random_int(1, 8));
+    QQmlProperty(_gif, "source").write(QString(buffer));
+
+    static bool first = true;
+    if (first) {
+        first = false;
+        std::sprintf(buffer, ":/qt/qml/Angelina/art/voices/greet%d.mp3", get_random_int(1, 3));
+        play_music(QString(buffer));
+    } else if (!QQmlProperty(_root, "isPlaying").read().toBool()) {
+        std::sprintf(buffer, ":/qt/qml/Angelina/art/voices/%d.mp3", get_random_int(1, 6));
+        play_music(QString(buffer));
+    }
+}
+
+void Angelina::random_on_play() {
+    QQmlProperty(_gif, "source").write(get_random_int(0, 1) ? "art/images/购物.gif" : "art/images/看书.gif");
 }

@@ -43,6 +43,7 @@ ApplicationWindow {
     signal play_music(string music)
     signal stop_music()
     signal random()
+    signal random_on_play()
 
     onShow_message: (title, content) => {
         message_dialog.title = title
@@ -148,7 +149,9 @@ ApplicationWindow {
         }
 
         onDoubleClicked: {
-            window.random()
+            if (!isPlaying) {
+                window.random()
+            }
         }
 
         onClicked: (mouse) => {
@@ -162,7 +165,6 @@ ApplicationWindow {
         objectName: "gif"
         id: gif
         anchors.fill: parent
-        source: "art/images/坐坐.gif"
     }
 
     FolderListModel {
@@ -288,6 +290,7 @@ ApplicationWindow {
                     }
 
                     onClicked: {
+                        window.random()
                         window.stop_music()
                     }
                 }
@@ -388,6 +391,8 @@ ApplicationWindow {
                                     window.playing_music = item_rect.path
                                     window.play_music(item_rect.path)
                                     window.isPlaying = true
+
+                                    window.random_on_play()
                                 }
                             }
 

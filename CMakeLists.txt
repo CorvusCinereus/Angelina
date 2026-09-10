@@ -31,6 +31,7 @@ qt_add_qml_module(appAngelina
     QML_FILES
         Main.qml
         RESOURCES ${GIF_FILES}
+        RESOURCES ${VOICES_FILES}
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
